@@ -1,6 +1,10 @@
 module.exports = {
   dir: 'example/views',
 
+  // watch: 'example/views',
+
+  output: 'example/output',
+
   data: {
     index : {
       title: 'Home',

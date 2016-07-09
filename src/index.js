@@ -1,13 +1,19 @@
-'use strict';
+import chalk from 'chalk';
+import handlebars from 'handlebars';
+import minimist from 'minimist';
+import path from 'path';
+import Promise from 'bluebird';
+import R from 'ramda';
+import shell from 'shelljs';
+import watch from 'watch';
 
-// const Handlebars = require('handlebars');
-
-
-const minimist = require('minimist');
-const path = require('path');
-const Promise = require("bluebird");
-const R = require('ramda');
-const shelljs = require('shelljs');
+const {
+  echo,
+	error,
+	exit,
+	ls,
+	mkdir,
+} = shell;
 
 // file system
 const fs = Promise.promisifyAll(require("fs"));
@@ -15,7 +21,7 @@ const fs = Promise.promisifyAll(require("fs"));
 // CLI arguments
 const argv = minimist(process.argv.slice(2));
 const CONFIGF_FILE = argv.config || argv.c;
-const WATCH = argv.watch || argv.c;
+
 
 // get config file
 const getConfig = () => {
@@ -28,18 +34,15 @@ const getConfig = () => {
 
 // config consants
 const config = getConfig();
-const DIR = config.dir;
-const PAGES = config.pages;
-const DATA = config.data;
-
-// shell commands
-// const {
-//   echo
-// } = shell;
-
+const DATA = config.data || argv.d;
+const DIR = config.dir || argv.c;
+const OUTPUT = config.output || argv.o;
+const PAGES = config.pages || argv.p;
+const WATCH = config.watch || argv.w;
+const EXT = config.ext || argv.e || 'html';
 
 // get source files
-function getFiles (dir, fn, pre, suf) {
+function getFiles (dir, fn, pre) {
   return fs.readdirAsync(dir).map(filename => {
 
     const filePath = dir +'/'+ filename;
@@ -54,7 +57,7 @@ function getFiles (dir, fn, pre, suf) {
 
     } else {
       // call callback
-      return fn && fn(`${pre || ''}${filename}${suf || ''}`, filePath);
+      return fn && fn(`${pre || ''}${filename.split('.hbs')[0]}`, filePath);
     }
   });
 }
@@ -74,7 +77,6 @@ function run () {
       };
 
       const obj = (content) => {
-
         const flattenConent = R.flatten(content);
         const fn = () => {
           return flattenFileMetaData.map((f, i) => {
@@ -88,32 +90,75 @@ function run () {
         return Promise.resolve((fn()));
       };
       return R.pipeP(getFiles, obj)(DIR, getFileContent);
-
     })
     .then(sourceArray => {
+      // convert array to object
       return R.fromPairs(sourceArray.map(i => {
         return [i.name, i.content];
       }));
     }).then(sourceObj => {
+
+      // create ouput directory if it does not already exist;
+      if (ls(OUTPUT) && error()) {
+        echo(`Creating directory ${OUTPUT}`);
+        mkdir('-p', OUTPUT);
+      }
+
+      return sourceObj;
+    })
+    .then(sourceObj => {
       // build pages
         PAGES.forEach(page => {
-          const insert = Object.assign(
-            {},
-            DATA[page],
-            { source: sourceObj[`${page}.hbs`] }
-          );
+          // tempalte data to be inserted
+          const content = {
+            ...DATA[page],
+            content: sourceObj[page]
+          };
 
-          console.log(insert);
+          // data to be insert into the compiled tempalte
+          const insert = {
+            ...DATA[page],
+            ...sourceObj
+          };
+
+          // create tempalte
+          const template = handlebars.compile(sourceObj['app/scaffold'])(content);
+
+          // polulate html teplate with data
+          const html = handlebars.compile(template)(insert);
+
+          // write the file to ouput path
+          fs.writeFileAsync(`${OUTPUT}/${page}.${EXT}`, html)
+          .then(result => {
+            echo(`Creadted: ${OUTPUT}/${page}.${EXT}`);
+          });
       });
-
-
+    })
+    .then(() => {
+      echo('\n\n' + chalk.underline('Handlebars build'));
+    })
+    .catch(err => {
+      echo(err);
     });
 
 
 }
 
+
 if (WATCH) {
   run();
+  watch.createMonitor(WATCH, function (monitor) {
+    monitor.files[`${WATCH}`];
+    monitor.on("created", function (f, stat) {
+      run();
+    });
+    monitor.on("changed", function (f, curr, prev) {
+      run();
+    });
+    monitor.on("removed", function (f, stat) {
+      run();
+    });
+  });
 } else {
   run();
 }
