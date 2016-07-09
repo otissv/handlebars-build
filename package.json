@@ -1,0 +1,68 @@
+{
+  "name": "handlebars-build",
+  "version": "1.0.0",
+  "description": "Task runner for compiling Handlebar's template",
+  "main": "lib/index.js",
+  "scripts": {
+    "start": "node lib/index.js -c ./example/handlebars.config.js",
+    "flow": "flow check; [[ $?=0||$?=2 ]]",
+    "flow:watch": "watch 'npm run flow' ./src",
+    "build": "babel src/index.js --out-file lib/index.js",
+    "build:watch": "watch 'npm run build' ./src",
+    "lint": "eslint src/index.js || true",
+    "lint:watch": "watch 'npm run lint' ./src",
+    "prepublish": "npm run webpack:build && npm run css:build",
+    "tape": "babel-node test-runner.js | tap-min  && date || true && date",
+    "tape:spec": "babel-node test-runner.js | tap-difflet || true && date",
+    "test": "npm run tape",
+    "test:spec": "npm run tape:spec",
+    "test:watch": "watch 'npm run tape' ./",
+    "views:build": "node handlebarsbuild.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/otissv/handlebars-build.git"
+  },
+  "keywords": [
+    "handlebars",
+    "task-runner",
+    "templating"
+  ],
+  "author": "Otis Virginie",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/otissv/handlebars-build/issues"
+  },
+  "homepage": "https://github.com/otissv/handlebars-build#readme",
+  "devDependencies": {
+    "babel-cli": "~6.10.1",
+    "babel-core": "~6.10.4",
+    "babel-eslint": "~6.1.1",
+    "babel-plugin-react-transform": "~2.0.2",
+    "babel-plugin-transform-runtime": "~6.9.0",
+    "babel-preset-es2015": "~6.9.0",
+    "babel-preset-stage-2": "~6.11.0",
+    "babel-runtime": "~6.9.2",
+    "bluebird": "^3.4.1",
+    "cheerio": "~0.20.0",
+    "eslint": "~3.0.1",
+    "eslint-config-standard": "~5.3.1",
+    "eslint-plugin-promise": "~1.3.2",
+    "eslint-plugin-smells": "~1.0.1",
+    "eslint-plugin-standard": "~1.3.2",
+    "faucet": "0.0.1",
+    "flow-bin": "~0.28.0",
+    "flow-loader": "~1.0.2",
+    "glob": "~7.0.5",
+    "handlebars": "~4.0.5",
+    "history": "~3.0.0",
+    "json-loader": "~0.5.4",
+    "minimist": "^1.2.0",
+    "ramda": "~0.21.0",
+    "shelljs": "^0.7.0",
+    "tap-difflet": "~0.6.0",
+    "tap-min": "~1.1.0",
+    "uglify-loader": "~1.3.0",
+    "watch": "~0.19.1"
+  }
+}
