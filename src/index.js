@@ -110,19 +110,16 @@ function run () {
       // build pages
         PAGES.forEach(page => {
           // tempalte data to be inserted
-          const content = {
-            ...DATA[page],
-            content: sourceObj[page]
-          };
-
-          // data to be insert into the compiled tempalte
           const insert = {
             ...DATA[page],
+            content: sourceObj[page],
             ...sourceObj
           };
 
+          // data to be insert into the compiled tempalte
+
           // create tempalte
-          const template = handlebars.compile(sourceObj['app/scaffold'])(content);
+          const template = handlebars.compile(sourceObj['app/scaffold'])(insert);
 
           // polulate html teplate with data
           const html = handlebars.compile(template)(insert);
