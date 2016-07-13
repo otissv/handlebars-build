@@ -1,3 +1,5 @@
+var about = require('./data/about');
+
 module.exports = {
   dir: 'example/views',
 
@@ -9,9 +11,7 @@ module.exports = {
     index : {
       title: 'Home',
     },
-    about: {
-      title: 'About'
-    },
+    about: about,
     contact: {
       title: 'Contact'
     },

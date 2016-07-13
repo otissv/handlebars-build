@@ -116,13 +116,15 @@ function run () {
             ...sourceObj
           };
 
-          // data to be insert into the compiled tempalte
-
           // create tempalte
           const template = handlebars.compile(sourceObj['app/scaffold'])(insert);
 
           // polulate html teplate with data
-          const html = handlebars.compile(template)(insert);
+          let html = handlebars.compile(template)(insert);
+
+          while (html.indexOf("{{{") >= 0) {
+            html = handlebars.compile(html)(insert);
+          }
 
           // write the file to ouput path
           fs.writeFileAsync(`${OUTPUT}/${page}.${EXT}`, html)
@@ -132,7 +134,7 @@ function run () {
       });
     })
     .then(() => {
-      echo('\n\n' + chalk.underline('Handlebars build'));
+      echo('\n\n' + chalk.underline('Handlebars build complete'));
     })
     .catch(err => {
       echo(err);
