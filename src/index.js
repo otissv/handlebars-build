@@ -2,7 +2,7 @@ import chalk from 'chalk';
 import handlebars from 'handlebars';
 import minimist from 'minimist';
 import path from 'path';
-import Promise from 'bluebird-extra';
+import Promise from 'bluebird';
 import R from 'ramda';
 import shell from 'shelljs';
 import watch from 'watch';
