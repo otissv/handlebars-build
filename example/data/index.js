@@ -1,8 +1,8 @@
 module.exports = {
-  title: 'About us',
+  title: 'Hello, World!',
 
   'text-block': {
-    title: 'Overview',
+    title: 'Welcome!',
     paragraph: [
       `This is the first paragraph`,
 

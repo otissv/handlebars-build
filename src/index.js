@@ -2,7 +2,7 @@ import chalk from 'chalk';
 import handlebars from 'handlebars';
 import minimist from 'minimist';
 import path from 'path';
-import Promise from 'bluebird';
+import Promise from 'bluebird-extra';
 import R from 'ramda';
 import shell from 'shelljs';
 import watch from 'watch';
@@ -41,106 +41,84 @@ const PAGES = config.pages || argv.p;
 const WATCH = config.watch || argv.w;
 const EXT = config.ext || argv.e || 'html';
 
-// get source files
-function getFiles (dir, fn, pre) {
-  return fs.readdirAsync(dir).map(filename => {
 
-    const filePath = dir +'/'+ filename;
-    const stat = fs.statSync(filePath);
+function readDir(dir) {
+  return fs.readdirAsync(dir).map(fileName => {
+    const filePath = path.join(dir, fileName);
+    return fs.statAsync(filePath)
+    .then(stat => stat.isDirectory() ? readDir(filePath) : filePath);
+  }).reduce((a, b) => a.concat(b), []);
+}
 
-    if (stat && stat.isDirectory()) {
-      // if path directory get its files
-      const pathSplit = filePath.split('/');
-      const dirName = pre || `${pathSplit[pathSplit.length - 1]}/`;
 
-      return getFiles(filePath, fn, dirName);
-
-    } else {
-      // call callback
-      return fn && fn(`${pre || ''}${filename.split('.hbs')[0]}`, filePath);
-    }
+function getPartails(filePaths) {
+  return filePaths.map(filePath => {
+    return fs.readFileAsync(filePath, 'utf8')
+    .then(content => {
+      return {
+        name: filePath.split(`${DIR}/`)[1].split('.')[0],
+        content
+      };
+    });
   });
 }
 
+
+// get source files
 function run () {
-  getFiles(DIR, function (filename, filePath) {
-      return {
-        name: filename,
-        path: filePath
-      };
-    })
-    .then(fileMetaData => {
-      const flattenFileMetaData = R.flatten(fileMetaData);
-
-      const getFileContent = (filename, filePath) => {
-        return fs.readFileAsync(filePath, "utf8");
-      };
-
-      const obj = (content) => {
-        const flattenConent = R.flatten(content);
-        const fn = () => {
-          return flattenFileMetaData.map((f, i) => {
-            return {
-              name: f.name,
-              content: flattenConent[i]
-            };
-          });
-        };
-
-        return Promise.resolve((fn()));
-      };
-      return R.pipeP(getFiles, obj)(DIR, getFileContent);
-    })
-    .then(sourceArray => {
-      // convert array to object
-      return R.fromPairs(sourceArray.map(i => {
-        return [i.name, i.content];
-      }));
-    }).then(sourceObj => {
-
-      // create ouput directory if it does not already exist;
-      if (ls(OUTPUT) && error()) {
-        echo(`Creating directory ${OUTPUT}`);
-        mkdir('-p', OUTPUT);
-      }
-
-      return sourceObj;
-    })
-    .then(sourceObj => {
-      // build pages
-        PAGES.forEach(page => {
-          // tempalte data to be inserted
-          const insert = {
-            ...DATA[page],
-            content: sourceObj[page],
-            ...sourceObj
-          };
-
-          // create tempalte
-          const template = handlebars.compile(sourceObj['app/scaffold'])(insert);
-
-          // polulate html teplate with data
-          let html = handlebars.compile(template)(insert);
-
-          while (html.indexOf("{{{") >= 0) {
-            html = handlebars.compile(html)(insert);
-          }
-
-          // write the file to ouput path
-          fs.writeFileAsync(`${OUTPUT}/${page}.${EXT}`, html)
-          .then(result => {
-            echo(`Creadted: ${OUTPUT}/${page}.${EXT}`);
-          });
-      });
-    })
-    .then(() => {
-      echo('\n\n' + chalk.underline('Handlebars build complete'));
-    })
-    .catch(err => {
-      echo(err);
+  readDir(DIR)
+  .then(filePaths => {
+    return Promise.all(getPartails(filePaths))
+    .then(x => x);
+  })
+  .then(partials => {
+    partials.forEach(partial => {
+      handlebars.registerPartial(partial.name, partial.content);
     });
 
+    let reducer = ((obj, item) => {
+      if (item == null) {
+        return obj;
 
+      } else {
+        obj[item.name] = item.content;
+        return obj;
+      }
+    });
+
+    return partials.reduce(reducer, {});
+
+  }).then(content => {
+    // create ouput directory if it does not already exist;
+    if (ls(OUTPUT) && error()) {
+      echo(`Creating directory ${OUTPUT}`);
+      mkdir('-p', OUTPUT);
+    }
+
+    PAGES.forEach(page => {
+
+      const insert = {
+        ...DATA[page],
+        ...content
+      };
+
+      handlebars.registerPartial('content',content[page]);
+      const html = handlebars.compile(content['layout'])(insert);
+      console.log(html);
+      // write the file to ouput path
+      fs.writeFileAsync(`${OUTPUT}/${page}.${EXT}`, html)
+      .then(result => {
+        echo(`Creadted: ${OUTPUT}/${page}.${EXT}`);
+      });
+    });
+
+  })
+  .then(() => {
+    echo('\n\n' + chalk.underline('Handlebars build complete'));
+  })
+  .catch(err => {
+    echo(err);
+  });
 }
 
 

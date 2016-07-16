@@ -1,4 +1,5 @@
-var about = require('./data/about');
+const index = require('./data/index');
+const about = require('./data/about');
 
 module.exports = {
   dir: 'example/views',
@@ -7,11 +8,13 @@ module.exports = {
 
   output: 'example/output',
 
+  layout: 'example/views/layout.hbs',
+
   data: {
-    index : {
-      title: 'Home',
-    },
+    index: index,
+
     about: about,
+
     contact: {
       title: 'Contact'
     },
@@ -21,8 +24,8 @@ module.exports = {
   },
 
   pages: [
-    'index',
     'about',
+    'index',
     'contact',
     'services'
   ]
