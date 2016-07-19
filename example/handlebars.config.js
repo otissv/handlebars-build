@@ -8,7 +8,6 @@ module.exports = {
 
   output: 'example/output',
 
-  layout: 'example/views/layout.hbs',
 
   data: {
     index: index,

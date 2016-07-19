@@ -104,7 +104,7 @@ function run () {
 
       handlebars.registerPartial('content',content[page]);
       const html = handlebars.compile(content['layout'])(insert);
-      console.log(html);
+      
       // write the file to ouput path
       fs.writeFileAsync(`${OUTPUT}/${page}.${EXT}`, html)
       .then(result => {
