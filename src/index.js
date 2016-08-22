@@ -10,7 +10,6 @@ import watch from 'watch';
 const {
   echo,
 	error,
-	exit,
 	ls,
 	mkdir,
 } = shell;
@@ -104,7 +103,7 @@ function run () {
 
       handlebars.registerPartial('content',content[page]);
       const html = handlebars.compile(content['layout'])(insert);
-      
+
       // write the file to ouput path
       fs.writeFileAsync(`${OUTPUT}/${page}.${EXT}`, html)
       .then(result => {
